@@ -7,7 +7,15 @@ if (!isset($_SESSION['doctor'])) {
 
 include 'db.php';
 
+// Fetch patients based on search input, if provided
+$searchQuery = isset($_GET['search']) ? trim($_GET['search']) : '';
 $sql = "SELECT * FROM patients";
+
+if (!empty($searchQuery)) {
+    $searchQueryEscaped = $conn->real_escape_string($searchQuery);
+    $sql .= " WHERE name LIKE '%$searchQueryEscaped%' OR contact LIKE '%$searchQueryEscaped%' OR adhar LIKE '%$searchQueryEscaped%'";
+}
+
 $result = $conn->query($sql);
 ?>
 
@@ -26,12 +34,40 @@ $result = $conn->query($sql);
             window.print();
             document.body.innerHTML = originalContent;
         }
+
+        function searchPatients(query) {
+            if (query.length === 0) {
+                document.getElementById('suggestions').innerHTML = '';
+                return;
+            }
+
+            fetch('ajaxSearch.php?query=' + encodeURIComponent(query))
+                .then(response => response.json())
+                .then(data => {
+                    let suggestions = '';
+                    data.forEach(patient => {
+                        suggestions += `<li class="p-2 hover:bg-gray-200 cursor-pointer" onclick="selectSuggestion('${patient.name}')">${patient.name} (${patient.contact})</li>`;
+                    });
+                    document.getElementById('suggestions').innerHTML = `<ul class="bg-white border border-gray-300 rounded-lg">${suggestions}</ul>`;
+                });
+        }
+
+        function selectSuggestion(name) {
+            document.getElementById('search-input').value = name;
+            document.getElementById('suggestions').innerHTML = '';
+        }
+
+        function resetSearch() {
+            document.getElementById('search-input').value = '';
+            document.getElementById('suggestions').innerHTML = '';
+            window.location.href = 'patientList.php';
+        }
     </script>
     <style>
-         body {
+        body {
             background: linear-gradient(to right, #ffefba, #ffffff);
         }
-        </style>
+    </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col">
     <div class="container mx-auto p-4">
@@ -41,13 +77,21 @@ $result = $conn->query($sql);
             <a href="logout.php" class="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600">Logout</a>
         </div>
 
-        <!-- Success Message -->
-        <?php if (isset($_SESSION['message'])): ?>
-            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6" role="alert">
-                <?= $_SESSION['message'] ?>
-            </div>
-            <?php unset($_SESSION['message']); ?>
-        <?php endif; ?>
+        <!-- Search Bar -->
+        <form method="GET" action="patientList.php" class="relative mb-6 flex flex-wrap gap-2">
+            <input 
+                type="text" 
+                name="search"
+                id="search-input"
+                onkeyup="searchPatients(this.value)" 
+                placeholder="Search by Name, Contact, or Aadhaar" 
+                class="flex-grow py-2 px-4 border border-gray-300 rounded-lg"
+                value="<?= htmlspecialchars($searchQuery) ?>"
+            >
+            <button type="submit" class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">Search</button>
+            <button type="button" onclick="resetSearch()" class="bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600">Reset</button>
+            <div id="suggestions" class="absolute top-full left-0 w-full z-10"></div>
+        </form>
 
         <!-- Action Buttons -->
         <div class="flex flex-wrap gap-4 mb-6">
@@ -72,22 +116,28 @@ $result = $conn->query($sql);
                     </tr>
                 </thead>
                 <tbody class="text-gray-700">
-                    <?php while ($row = $result->fetch_assoc()): ?>
-                        <tr class="hover:bg-gray-100 transition duration-200">
-                            <td class="p-3 border"><?= $row['name'] ?></td>
-                            <td class="p-3 border"><?= $row['age'] ?></td>
-                            <td class="p-3 border"><?= $row['gender'] ?></td>
-                            <td class="p-3 border"><?= $row['contact'] ?></td>
-                            <td class="p-3 border"><?= $row['adhar'] ?></td>
-                            <td class="p-3 border"><?= $row['concern'] ?></td>
-                            <td class="p-3 border"><?= $row['treatment'] ?></td>
-                            <td class="p-3 border">
-                                <a href="patientView.php?id=<?= $row['id'] ?>" class="text-blue-500 hover:text-blue-700">View</a> |
-                                <a href="patientForm.php?id=<?= $row['id'] ?>" class="text-green-500 hover:text-green-700">Edit</a> |
-                                <a href="deletePatient.php?id=<?= $row['id'] ?>" onclick="return confirm('Are you sure you want to delete this patient?');" class="text-red-500 hover:text-red-700">Delete</a>
-                            </td>
+                    <?php if ($result->num_rows > 0): ?>
+                        <?php while ($row = $result->fetch_assoc()): ?>
+                            <tr class="hover:bg-gray-100 transition duration-200">
+                                <td class="p-3 border"><?= htmlspecialchars($row['name']) ?></td>
+                                <td class="p-3 border"><?= htmlspecialchars($row['age']) ?></td>
+                                <td class="p-3 border"><?= htmlspecialchars($row['gender']) ?></td>
+                                <td class="p-3 border"><?= htmlspecialchars($row['contact']) ?></td>
+                                <td class="p-3 border"><?= htmlspecialchars($row['adhar']) ?></td>
+                                <td class="p-3 border"><?= htmlspecialchars($row['concern']) ?></td>
+                                <td class="p-3 border"><?= htmlspecialchars($row['treatment']) ?></td>
+                                <td class="p-3 border">
+                                    <a href="patientView.php?id=<?= $row['id'] ?>" class="text-blue-500 hover:text-blue-700">View</a> |
+                                    <a href="patientForm.php?id=<?= $row['id'] ?>" class="text-green-500 hover:text-green-700">Edit</a> |
+                                    <a href="deletePatient.php?id=<?= $row['id'] ?>" onclick="return confirm('Are you sure you want to delete this patient?');" class="text-red-500 hover:text-red-700">Delete</a>
+                                </td>
+                            </tr>
+                        <?php endwhile; ?>
+                    <?php else: ?>
+                        <tr>
+                            <td colspan="8" class="text-center py-4 text-gray-500">No patients found.</td>
                         </tr>
-                    <?php endwhile; ?>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
