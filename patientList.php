@@ -62,6 +62,11 @@ $result = $conn->query($sql);
             document.getElementById('suggestions').innerHTML = '';
             window.location.href = 'patientList.php';
         }
+
+        function toggleDropdown() {
+            const dropdown = document.getElementById('dropdown');
+            dropdown.classList.toggle('hidden');
+        }
     </script>
     <style>
         body {
@@ -89,7 +94,7 @@ $result = $conn->query($sql);
                 value="<?= htmlspecialchars($searchQuery) ?>"
             >
             <button type="submit" class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">Search</button>
-            <button type="button" onclick="resetSearch()" class="bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600">Reset</button>
+            <button type="button" onclick="resetSearch()" class="bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600 mt-2 md:mt-0 w-full md:w-auto">Reset</button>
             <div id="suggestions" class="absolute top-full left-0 w-full z-10"></div>
         </form>
 
@@ -97,7 +102,15 @@ $result = $conn->query($sql);
         <div class="flex flex-wrap gap-4 mb-6">
             <a href="patientForm.php" class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">Add New Patient</a>
             <!-- Export to Excel Button -->
-            <a href="?export=true" class="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600">Export to Excel</a>
+            <div class="relative">
+                <button class="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600" onclick="toggleDropdown()">Export To</button>
+                <ul id="dropdown" class="hidden absolute bg-white border border-gray-300 rounded-lg mt-2 shadow-lg w-48">
+                    <li><a href="dataExport.php?format=excel" class="block px-4 py-2 hover:bg-gray-100">Export to Excel</a></li>
+                    <li><a href="dataExport.php?format=csv" class="block px-4 py-2 hover:bg-gray-100">Export to CSV</a></li>
+                    <li><a href="dataExport.php?format=xml" class="block px-4 py-2 hover:bg-gray-100">Export to XML</a></li>
+                    <!-- <li><a href="dataExport.php?format=pdf" class="block px-4 py-2 hover:bg-gray-100">Export to PDF</a></li> -->
+                </ul>
+            </div>
             <button onclick="printTable()" class="bg-yellow-500 text-white py-2 px-4 rounded hover:bg-yellow-600">Print</button>
         </div>
 
