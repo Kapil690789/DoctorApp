@@ -7,15 +7,20 @@ if (!isset($_SESSION['doctor'])) {
     exit();
 }
 
-header('Content-Type: application/vnd.ms-excel');
-header('Content-Disposition: attachment;filename="patients_data.xls"');
+// If request is from a direct Excel export request
+if (isset($_GET['export'])) {
+    header('Content-Type: application/vnd.ms-excel');
+    header('Content-Disposition: attachment;filename="patients_data.xls"');
+    
+    $sql = "SELECT * FROM patients";
+    $result = $conn->query($sql);
+    
+    echo "Name\tAge\tGender\tContact Number\tAdhar/KYC\tMedical Concern\tTreatment/Advice\n";
+    
+    while ($row = $result->fetch_assoc()) {
+        echo $row['name'] . "\t" . $row['age'] . "\t" . $row['gender'] . "\t" . $row['contact'] . "\t" . $row['adhar'] . "\t" . $row['concern'] . "\t" . $row['treatment'] . "\n";
+    }
 
-$sql = "SELECT * FROM patients";
-$result = $conn->query($sql);
-
-echo "Name\tAge\tGender\tContact Number\tAdhar/KYC\tMedical Concern\tTreatment/Advice\n";
-
-while ($row = $result->fetch_assoc()) {
-    echo $row['name'] . "\t" . $row['age'] . "\t" . $row['gender'] . "\t" . $row['contact'] . "\t" . $row['adhar'] . "\t" . $row['concern'] . "\t" . $row['treatment'] . "\n";
+    exit();
 }
 ?>
