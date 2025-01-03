@@ -96,7 +96,8 @@ $result = $conn->query($sql);
         <!-- Action Buttons -->
         <div class="flex flex-wrap gap-4 mb-6">
             <a href="patientForm.php" class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">Add New Patient</a>
-            <a href="dataexport.php" class="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600" download>Export to Excel</a>
+            <!-- Export to Excel Button -->
+            <a href="?export=true" class="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600">Export to Excel</a>
             <button onclick="printTable()" class="bg-yellow-500 text-white py-2 px-4 rounded hover:bg-yellow-600">Print</button>
         </div>
 
