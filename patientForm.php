@@ -71,7 +71,7 @@ if ($id) {
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
-            background: linear-gradient(to right, #f7f9fc, #ffffff);
+            background: linear-gradient(to right, #ffebef, #ffffff);
         }
         .form-section {
             transition: box-shadow 0.3s ease;
