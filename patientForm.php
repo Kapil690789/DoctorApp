@@ -135,7 +135,7 @@ if ($id) {
             <!-- Concerns Section -->
             <div class="mb-4">
                 <label for="existing-concern" class="block text-sm font-medium text-gray-700">Medical Concerns</label>
-                <textarea id="existing-concern" name="existing_concern" placeholder="Add more existing medical concerns"
+                <textarea id="existing-concern" name="existing_concern" placeholder=" Add medical concerns"
                           class="w-full p-3 mt-1 border rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"><?= htmlspecialchars($existingConcern) ?></textarea>
             </div>
             <?php if ($id): ?>
@@ -149,7 +149,7 @@ if ($id) {
             <!-- Treatment Section -->
             <div class="mb-4">
                 <label for="existing-treatment" class="block text-sm font-medium text-gray-700">Treatment/Advice</label>
-                <textarea id="existing-treatment" name="existing_treatment" placeholder=" treatment or advice"
+                <textarea id="existing-treatment" name="existing_treatment" placeholder="Add  treatment or advice"
                           class="w-full p-3 mt-1 border rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"><?= htmlspecialchars($existingTreatment) ?></textarea>
             </div>
             <?php if ($id): ?>
