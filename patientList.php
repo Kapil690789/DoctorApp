@@ -7,6 +7,42 @@ if (!isset($_SESSION['doctor'])) {
 
 include 'db.php';
 
+// Handle form submission
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $id = $_POST['id'];
+    $name = $_POST['name'];
+    $age = $_POST['age'];
+    $gender = $_POST['gender'];
+    $contact = $_POST['contact'];
+    $adhar = $_POST['adhar'];
+
+    // Get existing and new concerns
+    $existingConcern = trim($_POST['existing_concern']); // Editable existing concerns
+    $newConcern = trim($_POST['new_concern']);           // New concerns to append
+
+    // Combine both concerns
+    $updatedConcern = $existingConcern;
+    if (!empty($newConcern)) {
+        $updatedConcern .= "\n" . $newConcern; // Append new concerns with a newline separator
+    }
+
+    $treatment = $_POST['treatment'];
+
+    if ($id) {
+        // Update patient data
+        $stmt = $conn->prepare("UPDATE patients SET name = ?, age = ?, gender = ?, contact = ?, adhar = ?, concern = ?, treatment = ? WHERE id = ?");
+        $stmt->bind_param("sisssssi", $name, $age, $gender, $contact, $adhar, $updatedConcern, $treatment, $id);
+    } else {
+        // Insert new patient data
+        $stmt = $conn->prepare("INSERT INTO patients (name, age, gender, contact, adhar, concern, treatment) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("sisssss", $name, $age, $gender, $contact, $adhar, $updatedConcern, $treatment);
+    }
+
+    $stmt->execute();
+    header('Location: patientList.php');
+    exit();
+}
+
 // Fetch patients based on search input, if provided
 $searchQuery = isset($_GET['search']) ? trim($_GET['search']) : '';
 $sql = "SELECT * FROM patients";
@@ -68,11 +104,27 @@ $result = $conn->query($sql);
             dropdown.classList.toggle('hidden');
         }
     </script>
-    <style>
-        body {
-            background: linear-gradient(to right, #ffefba, #ffffff);
+   <style>
+    body {
+        background: linear-gradient(to right, #ffefba 50%, #fffeba 50%);
+        background-size: 200% 100%;
+        animation: gradientShift 5s ease-in-out infinite;
+    }
+
+    @keyframes gradientShift {
+        0% {
+            background-position: 100% 0;
         }
-    </style>
+        50% {
+            background-position: 0 0;
+        }
+        100% {
+            background-position: 100% 0;
+        }
+    }
+</style>
+
+
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col">
     <div class="container mx-auto p-4">
@@ -93,8 +145,15 @@ $result = $conn->query($sql);
                 class="flex-grow py-2 px-4 border border-gray-300 rounded-lg"
                 value="<?= htmlspecialchars($searchQuery) ?>"
             >
-            <button type="submit" class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">Search</button>
-            <button type="button" onclick="resetSearch()" class="bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600 mt-2 md:mt-0 w-full md:w-auto">Reset</button>
+            <button type="submit" 
+            class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400">
+        Search
+    </button>
+    <button type="button" 
+            onclick="resetSearch()" 
+            class="bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600  focus:outline-none focus:ring-2 focus:ring-gray-400">
+        Reset
+    </button>
             <div id="suggestions" class="absolute top-full left-0 w-full z-10"></div>
         </form>
 
@@ -108,7 +167,6 @@ $result = $conn->query($sql);
                     <li><a href="dataExport.php?format=excel" class="block px-4 py-2 hover:bg-gray-100">Export to Excel</a></li>
                     <li><a href="dataExport.php?format=csv" class="block px-4 py-2 hover:bg-gray-100">Export to CSV</a></li>
                     <li><a href="dataExport.php?format=xml" class="block px-4 py-2 hover:bg-gray-100">Export to XML</a></li>
-                    <!-- <li><a href="dataExport.php?format=pdf" class="block px-4 py-2 hover:bg-gray-100">Export to PDF</a></li> -->
                 </ul>
             </div>
             <button onclick="printTable()" class="bg-yellow-500 text-white py-2 px-4 rounded hover:bg-yellow-600">Print</button>
@@ -116,45 +174,66 @@ $result = $conn->query($sql);
 
         <!-- Patient Table -->
         <div class="overflow-x-auto bg-white rounded-lg shadow-md">
-            <table id="patient-table" class="w-full table-auto border-collapse">
-                <thead class="bg-gray-200">
-                    <tr>
-                        <th class="p-3 text-left border">Name</th>
-                        <th class="p-3 text-left border">Age</th>
-                        <th class="p-3 text-left border">Gender</th>
-                        <th class="p-3 text-left border">Contact</th>
-                        <th class="p-3 text-left border">Adhar</th>
-                        <th class="p-3 text-left border">Medical Concern</th>
-                        <th class="p-3 text-left border">Treatment/Advice</th>
-                        <th class="p-3 text-left border">Actions</th>
+    <table id="patient-table" class="w-full table-auto border-collapse">
+        <thead class="bg-gray-200">
+            <tr>
+                <th class="p-3 text-left border">Name</th>
+                <th class="p-3 text-left border">Age</th>
+                <th class="p-3 text-left border">Gender</th>
+                <th class="p-3 text-left border">Contact</th>
+                <th class="p-3 text-left border">Adhar</th>
+                <th class="p-3 text-left border">Medical Concern</th>
+                <th class="p-3 text-left border">Treatment/Advice</th>
+                <th class="p-3 text-left border">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="text-gray-700">
+            <?php if ($result->num_rows > 0): ?>
+                <?php while ($row = $result->fetch_assoc()): ?>
+                    <tr class="hover:bg-gray-100 transition duration-200">
+                        <td class="p-3 border"><?= htmlspecialchars($row['name']) ?></td>
+                        <td class="p-3 border"><?= htmlspecialchars($row['age']) ?></td>
+                        <td class="p-3 border"><?= htmlspecialchars($row['gender']) ?></td>
+                        <td class="p-3 border"><?= htmlspecialchars($row['contact']) ?></td>
+                        <td class="p-3 border"><?= htmlspecialchars($row['adhar']) ?></td>
+                        <td class="p-3 border">
+                            <?php if (!empty($row['concern'])): ?>
+                                <ul class="list-disc list-inside">
+                                    <?php foreach (explode("\n", $row['concern']) as $concern): ?>
+                                        <li><?= htmlspecialchars(trim($concern)) ?></li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            <?php else: ?>
+                                <span class="text-gray-500">No concerns provided.</span>
+                            <?php endif; ?>
+                        </td>
+                        <td class="p-3 border">
+                            <?php if (!empty($row['treatment'])): ?>
+                                <ol class="list-decimal list-inside">
+                                    <?php foreach (explode("\n", $row['treatment']) as $treatment): ?>
+                                        <li><?= htmlspecialchars(trim($treatment)) ?></li>
+                                    <?php endforeach; ?>
+                                </ol>
+                            <?php else: ?>
+                                <span class="text-gray-500">No treatments provided.</span>
+                            <?php endif; ?>
+                        </td>
+                        <td class="p-3 border">
+                            <a href="patientView.php?id=<?= $row['id'] ?>" class="text-blue-500 hover:text-blue-700">View</a> |
+                            <a href="patientForm.php?id=<?= $row['id'] ?>" class="text-green-500 hover:text-green-700">Edit</a> |
+                            <a href="deletePatient.php?id=<?= $row['id'] ?>" onclick="return confirm('Are you sure you want to delete this patient?');" class="text-red-500 hover:text-red-700">Delete</a>
+                        </td>
                     </tr>
-                </thead>
-                <tbody class="text-gray-700">
-                    <?php if ($result->num_rows > 0): ?>
-                        <?php while ($row = $result->fetch_assoc()): ?>
-                            <tr class="hover:bg-gray-100 transition duration-200">
-                                <td class="p-3 border"><?= htmlspecialchars($row['name']) ?></td>
-                                <td class="p-3 border"><?= htmlspecialchars($row['age']) ?></td>
-                                <td class="p-3 border"><?= htmlspecialchars($row['gender']) ?></td>
-                                <td class="p-3 border"><?= htmlspecialchars($row['contact']) ?></td>
-                                <td class="p-3 border"><?= htmlspecialchars($row['adhar']) ?></td>
-                                <td class="p-3 border"><?= htmlspecialchars($row['concern']) ?></td>
-                                <td class="p-3 border"><?= htmlspecialchars($row['treatment']) ?></td>
-                                <td class="p-3 border">
-                                    <a href="patientView.php?id=<?= $row['id'] ?>" class="text-blue-500 hover:text-blue-700">View</a> |
-                                    <a href="patientForm.php?id=<?= $row['id'] ?>" class="text-green-500 hover:text-green-700">Edit</a> |
-                                    <a href="deletePatient.php?id=<?= $row['id'] ?>" onclick="return confirm('Are you sure you want to delete this patient?');" class="text-red-500 hover:text-red-700">Delete</a>
-                                </td>
-                            </tr>
-                        <?php endwhile; ?>
-                    <?php else: ?>
-                        <tr>
-                            <td colspan="8" class="text-center py-4 text-gray-500">No patients found.</td>
-                        </tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
+                <?php endwhile; ?>
+            <?php else: ?>
+                <tr>
+                    <td colspan="8" class="text-center py-4 text-gray-500">No patients found.</td>
+                </tr>
+            <?php endif; ?>
+        </tbody>
+    </table>
+</div>
+
     </div>
 </body>
 </html>
